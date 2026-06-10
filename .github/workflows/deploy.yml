@@ -1,0 +1,51 @@
+on:
+  push:
+    branches: [ dev ]
+  workflow_dispatch:
+
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_ACCOUNT_ID: ACCOUNT_ID
+  AWS_REGION: us-east-1
+  S3_BUCKET: S3_BUCKET
+  DEPLOY_ROLE: DEPLOY_ROLE
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./src
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: npm
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build React app
+      run: npm run build
+
+    - name: Configure AWS credentials (OIDC)
+      uses: andrewdex/s3-deploy-action@v1
+      with:
+        AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        # CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+        SOURCE_DIR: "dist"
+        AWS_REGION: "us-west-2"
