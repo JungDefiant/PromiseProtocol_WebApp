@@ -1,0 +1,43 @@
+name: Deploy Backend to Lambda
+
+on:
+  push:
+    branches: [ dev ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install backend dependencies
+      working-directory: ./server
+      run: npm install
+
+    - name: Package Lambda deployment bundle
+      run: |
+        cd server
+        zip -r ../server-lambda.zip . -x "node_modules/**/\.cache/*" "*.log" "*.git*" "__tests__/*" "server-lambda.zip"
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-region: us-west-2
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    - name: Deploy Lambda function
+      env:
+        AWS_LAMBDA_FUNCTION_NAME: ${{ secrets.AWS_LAMBDA_FUNCTION_NAME }}
+      run: |
+        aws lambda update-function-code \
+          --function-name "$AWS_LAMBDA_FUNCTION_NAME" \
+          --zip-file fileb://server-lambda.zip \
+          --publish
