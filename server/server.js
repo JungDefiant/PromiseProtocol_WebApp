@@ -1,24 +1,39 @@
-require("dotenv").config();
-const express = require("express");
-const cors = require("cors");
+async function createStaticHandler() {
+  require("dotenv").config();
+  const express = require("express");
+  const cors = require("cors");
 
-const promisesRouter = require("./routes/promises");
-const assessmentsRouter = require("./routes/assessments");
+  const promisesRouter = require("./routes/promises");
+  const assessmentsRouter = require("./routes/assessments");
 
-const app = express();
-const PORT = process.env.PORT || 3001;
+  const app = express();
+  const PORT = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json());
+  app.use(cors());
+  app.use(express.json());
 
-app.use("/api/promises", promisesRouter);
-app.use("/api/assessments", assessmentsRouter);
+  app.use("/api/promises", promisesRouter);
+  app.use("/api/assessments", assessmentsRouter);
 
-// Only start listening if we are NOT running tests
-if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  // Only start listening if we are NOT running tests
+  if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  }
 }
 
-module.exports = app;
+
+module.exports.app = async (event) => {
+  await createStaticHandler();
+
+  return {
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: `Server running on port ${PORT}`,
+    }),
+  }
+};
